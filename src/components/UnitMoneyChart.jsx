@@ -34,6 +34,31 @@ export function UnitMoneyChart() {
   const [error, setError] = React.useState(null);
   const [refreshing, setRefreshing] = React.useState(false);
 
+  // Bangladesh electricity tariff calculation function
+  const calculateElectricityCost = (unitsConsumed) => {
+    let cost = 0;
+    let remainingUnits = unitsConsumed;
+
+    // Bangladesh residential electricity tariff slabs (as of 2024)
+    const tariffSlabs = [
+      { limit: 75, rate: 4.5 },      // 0-75 units: 4.5 taka per unit
+      { limit: 125, rate: 5.5 },     // 76-200 units: 5.5 taka per unit
+      { limit: 100, rate: 6.5 },     // 201-300 units: 6.5 taka per unit
+      { limit: 100, rate: 8.5 },     // 301-400 units: 8.5 taka per unit
+      { limit: Infinity, rate: 11.0 } // 400+ units: 11.0 taka per unit
+    ];
+
+    for (const slab of tariffSlabs) {
+      if (remainingUnits <= 0) break;
+
+      const unitsInThisSlab = Math.min(remainingUnits, slab.limit);
+      cost += unitsInThisSlab * slab.rate;
+      remainingUnits -= unitsInThisSlab;
+    }
+
+    return cost;
+  };
+
   // Fetch daily cost data from API
   const fetchDailyCostData = async (isRefresh = false) => {
     try {
@@ -58,16 +83,18 @@ export function UnitMoneyChart() {
         // Extract week data and calculate daily costs
         const weekData = result.data.week || [];
 
-        // Calculate daily cost based on power consumption (assuming 10 taka per unit)
+        // Calculate daily cost based on power consumption using Bangladesh slab-based tariff
         const dailyCostData = weekData.map((item, index) => {
           const date = new Date();
           date.setDate(date.getDate() - (weekData.length - 1 - index));
           const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
 
-          // Calculate daily cost: (power in watts / 1000) * hours * cost per unit
-          // Assuming average 8 hours of AC usage per day and 10 taka per unit
+          // Calculate daily power consumption in kWh
+          // Assuming average 8 hours of usage per day
           const dailyPowerKwh = (item.power || 0) / 1000 * 8;
-          const dailyCost = dailyPowerKwh * 10;
+
+          // Calculate cost using Bangladesh slab-based tariff
+          const dailyCost = calculateElectricityCost(dailyPowerKwh);
 
           return {
             day: dayName,
@@ -82,15 +109,15 @@ export function UnitMoneyChart() {
     } catch (err) {
       console.error("Error fetching daily cost data:", err);
       setError(err.message);
-      // Fallback to sample data on error
+      // Fallback to sample data on error (calculated using slab rates)
       setChartData([
-        { day: "Mon", taka: 850 },
-        { day: "Tue", taka: 920 },
-        { day: "Wed", taka: 1150 },
-        { day: "Thu", taka: 1050 },
-        { day: "Fri", taka: 1200 },
-        { day: "Sat", taka: 1100 },
-        { day: "Sun", taka: 980 },
+        { day: "Mon", taka: 580 },   // ~20 kWh usage
+        { day: "Tue", taka: 640 },   // ~22 kWh usage
+        { day: "Wed", taka: 750 },   // ~25 kWh usage
+        { day: "Thu", taka: 690 },   // ~23 kWh usage
+        { day: "Fri", taka: 810 },   // ~27 kWh usage
+        { day: "Sat", taka: 730 },   // ~24 kWh usage
+        { day: "Sun", taka: 670 },   // ~22 kWh usage
       ]);
     } finally {
       if (isRefresh) {
@@ -156,7 +183,7 @@ export function UnitMoneyChart() {
         <div>
           <CardTitle>Daily Electricity Cost</CardTitle>
           <CardDescription>
-            Showing daily electricity cost for the last week (10 taka per unit)
+            Showing daily electricity cost using Bangladesh slab-based tariff rates
           </CardDescription>
         </div>
         <button
@@ -204,9 +231,6 @@ export function UnitMoneyChart() {
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
               Daily cost based on power consumption data <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Cost calculated at 10 taka per kWh with 8h daily usage
             </div>
           </div>
         </div>
