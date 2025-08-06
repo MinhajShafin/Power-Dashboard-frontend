@@ -11,7 +11,7 @@ export function TodayCost() {
   React.useEffect(() => {
     const fetchTodayCost = async () => {
       try {
-        const response = await fetch("https://toda-backend-tr28.onrender.com/today-consumption");
+        const response = await fetch("https://power-dashboard-backend.onrender.com/today-consumption");
         const result = await response.json();
 
         if (result.success) {

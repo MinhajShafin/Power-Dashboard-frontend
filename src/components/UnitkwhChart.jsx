@@ -46,7 +46,7 @@ export function UnitkwhChart() {
       setError(null);
 
       const response = await fetch(
-        "https://toda-backend-tr28.onrender.com/main-chart/data"
+        "https://power-dashboard-backend.onrender.com/main-chart/data"
       );
 
       if (!response.ok) {
