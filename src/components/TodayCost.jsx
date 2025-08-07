@@ -1,78 +1,70 @@
 "use client";
 
-import * as React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Tariff slabs (step-wise rates)
+const tariffSlabs = [
+  { limit: 75, rate: 4.5 },
+  { limit: 125, rate: 5.5 },
+  { limit: 100, rate: 6.5 },
+  { limit: 100, rate: 8.5 },
+  { limit: Infinity, rate: 11.0 },
+];
+
+// Calculate cost based on slabs
+function calculateTariffCost(units) {
+  let cost = 0;
+  let remaining = units;
+
+  for (let i = 0; i < tariffSlabs.length; i++) {
+    if (remaining <= 0) break;
+
+    const slab = tariffSlabs[i];
+    const slabUnits = Math.min(remaining, slab.limit);
+    cost += slabUnits * slab.rate;
+    remaining -= slabUnits;
+  }
+
+  return cost;
+}
+
 export function TodayCost() {
-  const [initialLoading, setInitialLoading] = React.useState(true);
-  const [todayCost, setTodayCost] = React.useState(0);
-  const [lastUpdated, setLastUpdated] = React.useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [kwh, setKwh] = useState(0);
+  const [tariffCost, setTariffCost] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Bangladesh electricity tariff calculation function
-  const calculateElectricityCost = (unitsConsumed) => {
-    let cost = 0;
-    let remainingUnits = unitsConsumed;
-
-    // Bangladesh residential electricity tariff slabs (as of 2024)
-    const tariffSlabs = [
-      { limit: 75, rate: 4.5 },      // 0-75 units: 4.5 taka per unit
-      { limit: 125, rate: 5.5 },     // 76-200 units: 5.5 taka per unit
-      { limit: 100, rate: 6.5 },     // 201-300 units: 6.5 taka per unit
-      { limit: 100, rate: 8.5 },     // 301-400 units: 8.5 taka per unit
-      { limit: Infinity, rate: 11.0 } // 400+ units: 11.0 taka per unit
-    ];
-
-    for (const slab of tariffSlabs) {
-      if (remainingUnits <= 0) break;
-
-      const unitsInThisSlab = Math.min(remainingUnits, slab.limit);
-      cost += unitsInThisSlab * slab.rate;
-      remainingUnits -= unitsInThisSlab;
-    }
-
-    return cost;
-  };
-
-  React.useEffect(() => {
-    const fetchTodayCost = async () => {
+  useEffect(() => {
+    const fetchTodayConsumption = async () => {
       try {
-        const response = await fetch("https://power-dashboard-backend.onrender.com/today-consumption");
+        const response = await fetch(
+          "https://toda-backend-tr28.onrender.com/today-consumption",
+        );
         const result = await response.json();
 
         if (result.success) {
-          // Check if the API returns cost directly or if we need to calculate from consumption
-          if (result.data.cost !== undefined) {
-            // If API returns cost, use it directly
-            setTodayCost(result.data.cost);
-          } else if (result.data.consumption !== undefined) {
-            // If API returns consumption in kWh, calculate cost using slab rates
-            const calculatedCost = calculateElectricityCost(result.data.consumption);
-            setTodayCost(calculatedCost);
-          } else if (result.data.power !== undefined) {
-            // If API returns power in watts, estimate daily consumption and calculate cost
-            // Assuming the power reading represents current usage rate
-            const estimatedDailyConsumption = (result.data.power / 1000) * 24; // 24 hours
-            const calculatedCost = calculateElectricityCost(estimatedDailyConsumption);
-            setTodayCost(calculatedCost);
-          } else {
-            console.error("No valid cost or consumption data found in API response");
-          }
+          const units = result.data.kwh;
+          const cost = calculateTariffCost(units);
+
+          setKwh(units);
+          setTariffCost(cost);
           setLastUpdated(new Date());
         } else {
-          console.error("Failed to fetch today's cost:", result.error);
+          console.error("Failed to fetch:", result.error);
         }
       } catch (error) {
-        console.error("Error fetching today's cost:", error);
+        console.error("Fetch error:", error);
       } finally {
         setInitialLoading(false);
       }
     };
 
     // Initial fetch
-    fetchTodayCost();
+    fetchTodayConsumption();
 
     // Set up real-time polling every 30 seconds
-    const interval = setInterval(fetchTodayCost, 30000);
+    const interval = setInterval(fetchTodayConsumption, 30000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
@@ -82,20 +74,23 @@ export function TodayCost() {
     <Card className="w-[600px] ml-4">
       <CardHeader className="pb-3">
         <CardTitle className="font-semibold text-xl">
-          Today's Electricity Cost (Bangladesh Tariff)
+          Today's Electricity Cost for AC
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
             <span className="text-xl font-medium text-foreground">
-              {initialLoading ? "Loading..." : todayCost.toFixed(2)}
+              {initialLoading ? "Loading..." : tariffCost.toFixed(2)}
             </span>
             <span className="text-lg text-muted-foreground">Taka</span>
           </div>
         </div>
+        <div className="mt-1 text-sm text-muted-foreground">
+          Units consumed: {initialLoading ? "Loading..." : kwh.toFixed(2)} kWh
+        </div>
         <div className="mt-2 text-xs text-muted-foreground">
-          Slab rates: 0-75@4.5 ৳ , 76-200@5.5 ৳ , 201-300@6.5 ৳ , 301-400@8.5 ৳ , 400+@11 ৳
+          Calculated using official tariff slabs
         </div>
         <div className="flex items-center justify-end">
           <span className="text-xs text-muted-foreground">
