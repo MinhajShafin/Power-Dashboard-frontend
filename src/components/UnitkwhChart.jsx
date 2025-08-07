@@ -204,9 +204,6 @@ export function UnitkwhChart() {
             <div className="flex items-center gap-2 font-medium leading-none">
               Energy consumption over the week <TrendingUp className="h-4 w-4" />
             </div>
-            <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Updated in real-time from MongoDB
-            </div>
           </div>
         </div>
       </CardFooter>

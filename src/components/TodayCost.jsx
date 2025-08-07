@@ -55,7 +55,6 @@ export function TodayCost() {
         </div>
         <div className="flex items-center justify-end">
           <span className="text-xs text-muted-foreground">
-            Today's Cost When per unit is 10 taka
             {lastUpdated && (
               <span className="ml-2 text-green-500">
                 • Last updated: {lastUpdated.toLocaleTimeString()}
