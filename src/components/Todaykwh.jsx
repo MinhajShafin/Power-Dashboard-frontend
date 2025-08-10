@@ -2,17 +2,21 @@
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiBase } from "@/lib/config";
 
-export function Todaykwh() {
+export function Todaykwh({ deviceId }) {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [todaykwh, setTodaykwh] = React.useState(0);
 
   React.useEffect(() => {
     const fetchTodayKwh = async () => {
       try {
-        const response = await fetch(
-          "https://power-dashboard-backend.onrender.com/today-consumption"
-        );
+        const url = deviceId
+          ? `${apiBase}/today-consumption?deviceId=${encodeURIComponent(
+              deviceId
+            )}`
+          : `${apiBase}/today-consumption`;
+        const response = await fetch(url);
         const result = await response.json();
 
         if (result.success) {
@@ -28,7 +32,7 @@ export function Todaykwh() {
     };
 
     fetchTodayKwh();
-  }, []);
+  }, [deviceId]);
 
   return (
     <Card className="w-64 ml-4">

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Activity, TrendingUp, Loader2, RefreshCw } from "lucide-react";
+import { apiBase } from "@/lib/config";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
 import {
@@ -29,7 +30,7 @@ const chartConfig = {
   },
 };
 
-export function UnitkwhChart() {
+export function UnitkwhChart({ deviceId }) {
   const [chartData, setChartData] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -45,9 +46,12 @@ export function UnitkwhChart() {
       }
       setError(null);
 
-      const response = await fetch(
-        "https://power-dashboard-backend.onrender.com/main-chart/data"
-      );
+      const url = deviceId
+        ? `${apiBase}/main-chart/data?deviceId=${encodeURIComponent(
+            deviceId
+          )}`
+        : `${apiBase}/main-chart/data`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -104,7 +108,7 @@ export function UnitkwhChart() {
 
   React.useEffect(() => {
     fetchKwhData();
-  }, []);
+  }, [deviceId]);
 
   const handleRefresh = () => {
     fetchKwhData(true);

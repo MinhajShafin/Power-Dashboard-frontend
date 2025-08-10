@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiBase } from "@/lib/config";
 
 // Tariff slabs (step-wise rates)
 const tariffSlabs = [
@@ -29,7 +30,7 @@ function calculateTariffCost(units) {
   return cost;
 }
 
-export function TodayCost() {
+export function TodayCost({ deviceId }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [kwh, setKwh] = useState(0);
   const [tariffCost, setTariffCost] = useState(0);
@@ -38,9 +39,12 @@ export function TodayCost() {
   useEffect(() => {
     const fetchTodayConsumption = async () => {
       try {
-        const response = await fetch(
-          "https://toda-backend-tr28.onrender.com/today-consumption",
-        );
+        const url = deviceId
+          ? `${apiBase}/today-consumption?deviceId=${encodeURIComponent(
+              deviceId
+            )}`
+          : `${apiBase}/today-consumption`;
+        const response = await fetch(url);
         const result = await response.json();
 
         if (result.success) {
@@ -68,7 +72,7 @@ export function TodayCost() {
 
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
-  }, []);
+  }, [deviceId]);
 
   return (
     <Card className="w-[600px] ml-4">

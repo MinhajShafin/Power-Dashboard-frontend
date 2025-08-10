@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiBase } from "@/lib/config";
 
 const chartConfig = {
   power: {
@@ -48,7 +49,7 @@ const chartConfig = {
   },
 };
 
-export function ChartAreaInteractive() {
+export function ChartAreaInteractive({ deviceId }) {
   const [timeRange, setTimeRange] = React.useState("1d");
   const [chartData, setChartData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -64,9 +65,12 @@ export function ChartAreaInteractive() {
         setLoading(true);
       }
       setError(null);
-      const response = await fetch(
-        "https://power-dashboard-backend.onrender.com/main-chart/data"
-      );
+      const url = deviceId
+        ? `${apiBase}/main-chart/data?deviceId=${encodeURIComponent(
+            deviceId
+          )}`
+        : `${apiBase}/main-chart/data`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,7 +97,8 @@ export function ChartAreaInteractive() {
 
   React.useEffect(() => {
     fetchData();
-  }, []);
+    // re-fetch when deviceId changes
+  }, [deviceId]);
 
   const handleRefresh = () => {
     fetchData(true);

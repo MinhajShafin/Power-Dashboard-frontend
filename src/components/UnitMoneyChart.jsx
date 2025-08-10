@@ -3,6 +3,7 @@
 import * as React from "react";
 import { TrendingUp, Loader2, RefreshCw } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { apiBase } from "@/lib/config";
 
 import {
   Card,
@@ -28,7 +29,7 @@ const chartConfig = {
   },
 };
 
-export function UnitMoneyChart() {
+export function UnitMoneyChart({ deviceId }) {
   const [chartData, setChartData] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -69,9 +70,12 @@ export function UnitMoneyChart() {
       }
       setError(null);
 
-      const response = await fetch(
-        "https://power-dashboard-backend.onrender.com/main-chart/data"
-      );
+      const url = deviceId
+        ? `${apiBase}/main-chart/data?deviceId=${encodeURIComponent(
+            deviceId
+          )}`
+        : `${apiBase}/main-chart/data`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -130,7 +134,7 @@ export function UnitMoneyChart() {
 
   React.useEffect(() => {
     fetchDailyCostData();
-  }, []);
+  }, [deviceId]);
 
   const handleRefresh = () => {
     fetchDailyCostData(true);

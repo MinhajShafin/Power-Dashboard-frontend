@@ -14,7 +14,7 @@ export function DeviceControl() {
     const fetchSwitchStatus = async () => {
       try {
         const response = await fetch(
-          "https://power-dashboard-backend.onrender.com/switch-status"
+          "http://localhost:9060/switch-status"
         );
 
         if (!response.ok) {
@@ -43,7 +43,7 @@ export function DeviceControl() {
     try {
       setSwitchLoading(true);
       const response = await fetch(
-        "https://power-dashboard-backend.onrender.com/switch",
+        "http://localhost:9060/switch",
         {
           method: "POST",
           headers: {
