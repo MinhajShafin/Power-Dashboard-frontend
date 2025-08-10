@@ -3,8 +3,9 @@
 import * as React from "react";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiBase } from "@/lib/config";
 
-export function DeviceControl() {
+export function DeviceControl({ deviceId }) {
   const [switchState, setSwitchState] = React.useState(false);
   const [switchLoading, setSwitchLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
@@ -13,9 +14,10 @@ export function DeviceControl() {
   React.useEffect(() => {
     const fetchSwitchStatus = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:9060/switch-status"
-        );
+        const url = deviceId
+          ? `${apiBase}/switch-status?deviceId=${encodeURIComponent(deviceId)}`
+          : `${apiBase}/switch-status`;
+        const response = await fetch(url);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,21 +39,16 @@ export function DeviceControl() {
     };
 
     fetchSwitchStatus();
-  }, []);
+  }, [deviceId]);
 
   const handleSwitchToggle = async (checked) => {
     try {
       setSwitchLoading(true);
-      const response = await fetch(
-        "http://localhost:9060/switch",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ state: checked }),
-        }
-      );
+      const response = await fetch(`${apiBase}/switch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: checked, deviceId }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

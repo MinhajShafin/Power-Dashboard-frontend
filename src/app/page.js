@@ -66,42 +66,74 @@ function App({ selectedDevice }) {
   const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
-    const ws = new WebSocket(wsUrl());
-
-    ws.onopen = () => {
-      console.log("✅ WebSocket connected");
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const newData = JSON.parse(event.data);
-        // If message has a deviceId, only accept when it matches selection
-        if (
-          newData?.deviceId &&
-          selectedDevice &&
-          newData.deviceId !== selectedDevice
-        ) {
-          return;
-        }
-        setData(newData);
-        setBlink(true);
-        setTimeout(() => setBlink(false), 150);
-      } catch (err) {
-        console.error("❌ Error parsing message", err);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("❌ WebSocket error", err);
-    };
-
-    ws.onclose = () => {
-      console.warn("⚠️ WebSocket closed");
+    const url = wsUrl();
+    if (!url) {
       setWsConnected(false);
+      return; // WS disabled via env
+    }
+
+    let attempts = 0;
+    let closed = false;
+    let ws;
+
+    const connect = () => {
+      if (closed) return;
+      attempts++;
+      try {
+        ws = new WebSocket(url);
+      } catch (e) {
+        scheduleReconnect();
+        return;
+      }
+
+      ws.onopen = () => {
+        attempts = 0;
+        setWsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const newData = JSON.parse(event.data);
+          // If message has a deviceId, only accept when it matches selection
+          if (
+            newData?.deviceId &&
+            selectedDevice &&
+            newData.deviceId !== selectedDevice
+          ) {
+            return;
+          }
+          setData(newData);
+          setBlink(true);
+          setTimeout(() => setBlink(false), 150);
+        } catch (err) {
+          console.error("❌ Error parsing message", err);
+        }
+      };
+
+      ws.onerror = () => {
+        // quiet: errors will trigger close and reconnect
+      };
+
+      ws.onclose = () => {
+        setWsConnected(false);
+        scheduleReconnect();
+      };
     };
 
-    return () => ws.close();
+    const scheduleReconnect = () => {
+      if (closed) return;
+      const delay = Math.min(30000, 1000 * Math.pow(2, Math.min(6, attempts)));
+      setTimeout(connect, delay);
+    };
+
+    connect();
+
+    return () => {
+      closed = true;
+      try {
+        ws && ws.close();
+      } catch {}
+    };
   }, [selectedDevice]);
 
   const handleUserManualDownload = () => {
